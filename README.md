@@ -10,6 +10,7 @@ adaptación— y registra las donaciones a la cuenta común de la organización.
 > ([AUDITORIA.md](docs/AUDITORIA.md)), trabajo en GitLab ([GITLAB.md](docs/GITLAB.md)),
 > defensa ([DEFENSA.md](docs/DEFENSA.md)), preguntas ([PREGUNTAS.md](docs/PREGUNTAS.md)) y
 > guías individuales ([GUIAS-ESTUDIO.md](docs/GUIAS-ESTUDIO.md)).
+> Todo integrado en un solo Word de estudio: [docs/TPI-Backend-2026-Documento-Maestro.docx](docs/TPI-Backend-2026-Documento-Maestro.docx).
 
 ## 1. Problema que resuelve
 
