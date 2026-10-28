@@ -1,0 +1,63 @@
+@startuml C2-Contenedores
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+title C2 - Diagrama de Contenedores: Sistema de Adopción Responsable (implementado, docker-compose.yml)
+
+AddElementTag("lib", $bgColor="#EEEEEE", $fontColor="#333333", $borderColor="#777777", $borderStyle=DashedLine(), $legendText="Librería Maven (no desplegable)")
+AddRelTag("seguridad", $lineColor="#B22222", $textColor="#B22222", $lineStyle=DashedLine(), $legendText="Autenticación / seguridad")
+AddRelTag("dependencia", $lineColor="#777777", $textColor="#777777", $lineStyle=DashedLine(), $legendText="Dependencia Maven (compilación)")
+AddRelTag("colaboracion", $lineColor="#1B7A1B", $textColor="#1B7A1B", $legendText="Colaboración funcional entre servicios")
+
+Person(adoptante, "Adoptante", "Solicita adopciones, dona y consulta su estado.")
+Person(coordinador, "Coordinador", "Gestiona animales, decide sobre solicitudes, entregas y controles, y consulta donaciones.")
+
+Container_Ext(keycloak, "Keycloak", "Keycloak 26 (OIDC), puerto 8180", "Identity Provider. Realm 'adopciones' importado al arrancar. Emite JWT con iss fijo (KC_HOSTNAME) y realm_access.roles. Parte del despliegue.")
+ContainerDb_Ext(kcdb, "keycloak-db", "PostgreSQL 17 (instancia propia)", "Realm, usuarios y roles. Separada de los datos de negocio.")
+System_Ext(georef, "API Georef", "API pública REST (apis.datos.gob.ar)", "GET /direcciones: latitud y longitud de un domicilio.")
+System_Ext(mercadopago, "Mercado Pago", "API REST de pagos", "POST /checkout/preferences y GET /v1/payments/search. Aloja la página donde paga el donante.")
+
+System_Boundary(sistema, "Sistema de Adopción Responsable (red Docker tpi-net)") {
+
+    Container(gateway, "API Gateway", "Java 21, Spring Cloud Gateway (WebFlux), Spring Security - :8080 publicado", "Única entrada. Security Filter: valida el JWT y exige rol ADOPTANTE o COORDINADOR en /api/**. Enruta sin reescribir rutas, no publica /internal/**, genera X-Correlation-ID y traduce caídas internas a 503.")
+
+    Container(animales, "ms-animales", "Java 21, Spring Boot 3.5, Spring Security - :8081 interno", "Dueño del animal y de su estado (DISPONIBLE, RESERVADO, EN_ADAPTACION, ADOPTADO, NO_DISPONIBLE). Rechaza transiciones inválidas (R-13). API pública y API interna (rol SERVICIO).")
+
+    Container(adopciones, "ms-adopciones", "Java 21, Spring Boot 3.5, Spring Security - :8082 interno", "Dueño del proceso: perfiles, solicitudes, evaluación R-01 a R-08, entrega y seguimiento R-09 a R-12, historial. Tarea programada de vencimientos.")
+
+    Container(donaciones, "ms-donaciones", "Java 21, Spring Boot 3.5, Spring Security - :8083 interno", "Dueño de las donaciones (D-01 a D-04). Crea el cobro y confirma la acreditación consultando al proveedor.")
+
+    Container(common, "tpi-common", "JAR Maven 1.0.0-SNAPSHOT", "Formato único de error, excepciones, manejador global, conversor de roles de Keycloak, 401/403 en JSON, configuración base de Resource Server y correlación. Se instala en .m2; no se despliega.", $tags="lib")
+
+    ContainerDb(db, "postgres (negocio)", "PostgreSQL 17", "Base 'tpi' con un esquema y un usuario por servicio: animales, adopciones, donaciones.")
+}
+
+Rel(adoptante, keycloak, "Obtiene un token JWT", "OIDC / HTTP", $tags="seguridad")
+Rel(coordinador, keycloak, "Obtiene un token JWT", "OIDC / HTTP", $tags="seguridad")
+Rel(adoptante, gateway, "Invoca la API con el JWT", "HTTP / REST JSON")
+Rel(coordinador, gateway, "Invoca la API con el JWT", "HTTP / REST JSON")
+Rel(adoptante, mercadopago, "Paga la donación", "HTTPS (navegador)")
+
+Rel(gateway, keycloak, "Descarga claves públicas para validar el JWT", "HTTP / JWKS", $tags="seguridad")
+Rel(gateway, animales, "/api/animales/**", "HTTP / REST JSON")
+Rel(gateway, adopciones, "/api/adoptantes/**, /api/solicitudes/**", "HTTP / REST JSON")
+Rel(gateway, donaciones, "/api/donaciones/**", "HTTP / REST JSON")
+
+Rel(adopciones, animales, "Consulta estado y aptitudes; pide RESERVADO, EN_ADAPTACION, ADOPTADO o DISPONIBLE (/internal/animales, token de servicio)", "HTTP / REST JSON", $tags="colaboracion")
+Rel(adopciones, georef, "Coordenadas del domicilio del postulante (R-06)", "HTTPS / GET /direcciones")
+Rel(donaciones, mercadopago, "Crea cobros y consulta pagos por external_reference", "HTTPS / REST JSON")
+
+Rel(animales, keycloak, "Valida el JWT (JWKS)", "HTTP", $tags="seguridad")
+Rel(adopciones, keycloak, "Valida el JWT y obtiene el token de servicio", "HTTP / JWKS, client credentials", $tags="seguridad")
+Rel(donaciones, keycloak, "Valida el JWT (JWKS)", "HTTP", $tags="seguridad")
+
+Rel(animales, db, "Lee y escribe (esquema animales)", "JDBC")
+Rel(adopciones, db, "Lee y escribe (esquema adopciones)", "JDBC")
+Rel(donaciones, db, "Lee y escribe (esquema donaciones)", "JDBC")
+Rel(keycloak, kcdb, "Persiste realm, usuarios y roles", "JDBC")
+
+Rel(animales, common, "Depende de", "dependencia Maven", $tags="dependencia")
+Rel(adopciones, common, "Depende de", "dependencia Maven", $tags="dependencia")
+Rel(donaciones, common, "Depende de", "dependencia Maven", $tags="dependencia")
+
+@enduml

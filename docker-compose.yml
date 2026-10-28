@@ -1,0 +1,226 @@
+# Despliegue integral del backend. Configuracion base: solo el Gateway (8080) y Keycloak (8180)
+# publican puertos. Los servicios y las bases quedan en la red interna tpi-net.
+# Desarrollo:  docker compose up --build -d   (aplica tambien docker-compose.override.yml)
+# Produccion:  docker compose -f docker-compose.yml up --build -d
+name: tpi-adopciones
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-keycloak-validacion: &keycloak-validacion
+  # El emisor que se valida es la URL PUBLICA (la que usa Postman), porque Keycloak firma los
+  # tokens con KC_HOSTNAME. Las claves publicas se bajan por la red interna.
+  KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/adopciones
+  KEYCLOAK_JWK_URI: http://keycloak:8080/realms/adopciones/protocol/openid-connect/certs
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tpi-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ANIMALES_DB_USER: ${ANIMALES_DB_USER}
+      ANIMALES_DB_PASSWORD: ${ANIMALES_DB_PASSWORD}
+      ADOPCIONES_DB_USER: ${ADOPCIONES_DB_USER}
+      ADOPCIONES_DB_PASSWORD: ${ADOPCIONES_DB_PASSWORD}
+      DONACIONES_DB_USER: ${DONACIONES_DB_USER}
+      DONACIONES_DB_PASSWORD: ${DONACIONES_DB_PASSWORD}
+    volumes:
+      - tpi-postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [tpi-net]
+    logging: *logging
+
+  keycloak-db:
+    image: postgres:17-alpine
+    container_name: tpi-keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${KC_DB_USER}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - tpi-keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [tpi-net]
+    logging: *logging
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: tpi-keycloak
+    # start-dev: HTTP sin TLS, adecuado para desarrollo y defensa. --import-realm importa el realm
+    # de /opt/keycloak/data/import si todavia no existe (no pisa cambios posteriores).
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USER}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Emisor fijo: todos los tokens llevan iss=http://localhost:8180/realms/adopciones,
+      # se pidan desde Postman (localhost:8180) o desde ms-adopciones (keycloak:8080).
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Valores que el realm importado toma como placeholders ${...}
+      ADOPCIONES_SERVICE_CLIENT_SECRET: ${ADOPCIONES_SERVICE_CLIENT_SECRET}
+      DEMO_USERS_PASSWORD: ${DEMO_USERS_PASSWORD}
+    volumes:
+      - ./infra/keycloak/realm-adopciones.json:/opt/keycloak/data/import/realm-adopciones.json:ro
+    ports:
+      - "8180:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [tpi-net]
+    logging: *logging
+
+  ms-animales:
+    build:
+      context: .
+      dockerfile: ms-animales/Dockerfile
+    image: tpi/ms-animales:1.0.0
+    container_name: ms-animales
+    environment:
+      <<: *keycloak-validacion
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USER: ${ANIMALES_DB_USER}
+      DB_PASSWORD: ${ANIMALES_DB_PASSWORD}
+      ANIMALES_DATOS_DEMO: ${ANIMALES_DATOS_DEMO:-true}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [tpi-net]
+    logging: *logging
+
+  ms-adopciones:
+    build:
+      context: .
+      dockerfile: ms-adopciones/Dockerfile
+    image: tpi/ms-adopciones:1.0.0
+    container_name: ms-adopciones
+    environment:
+      <<: *keycloak-validacion
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USER: ${ADOPCIONES_DB_USER}
+      DB_PASSWORD: ${ADOPCIONES_DB_PASSWORD}
+      ANIMALES_URL: http://ms-animales:8081
+      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/adopciones/protocol/openid-connect/token
+      ADOPCIONES_SERVICE_CLIENT_ID: adopciones-service
+      ADOPCIONES_SERVICE_CLIENT_SECRET: ${ADOPCIONES_SERVICE_CLIENT_SECRET}
+      GEOREF_BASE_URL: ${GEOREF_BASE_URL:-https://apis.datos.gob.ar/georef/api/v2.0}
+      REFUGIO_LAT: ${REFUGIO_LAT:--31.4334}
+      REFUGIO_LON: ${REFUGIO_LON:--64.1918}
+      DISTANCIA_MAX_KM: ${DISTANCIA_MAX_KM:-100}
+      PLAZO_ENTREGA_DIAS: ${PLAZO_ENTREGA_DIAS:-7}
+      PERIODO_ADAPTACION_DIAS: ${PERIODO_ADAPTACION_DIAS:-30}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ms-animales:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8082 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [tpi-net]
+    logging: *logging
+
+  ms-donaciones:
+    build:
+      context: .
+      dockerfile: ms-donaciones/Dockerfile
+    image: tpi/ms-donaciones:1.0.0
+    container_name: ms-donaciones
+    environment:
+      <<: *keycloak-validacion
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USER: ${DONACIONES_DB_USER}
+      DB_PASSWORD: ${DONACIONES_DB_PASSWORD}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_USAR_SANDBOX_INIT_POINT: ${MP_USAR_SANDBOX_INIT_POINT:-false}
+      DONACION_MONTO_MINIMO: ${DONACION_MONTO_MINIMO:-1}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8083 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [tpi-net]
+    logging: *logging
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    image: tpi/gateway:1.0.0
+    container_name: gateway
+    environment:
+      <<: *keycloak-validacion
+      ANIMALES_URL: http://ms-animales:8081
+      ADOPCIONES_URL: http://ms-adopciones:8082
+      DONACIONES_URL: http://ms-donaciones:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      ms-animales:
+        condition: service_healthy
+      ms-adopciones:
+        condition: service_healthy
+      ms-donaciones:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks: [tpi-net]
+    logging: *logging
+
+networks:
+  tpi-net:
+    name: tpi-net
+    driver: bridge
+
+volumes:
+  tpi-postgres-data:
+    name: tpi-postgres-data
+  tpi-keycloak-db-data:
+    name: tpi-keycloak-db-data

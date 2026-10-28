@@ -1,0 +1,1783 @@
+{
+  "info": {
+    "_postman_id": "7b0c2a51-6c6e-4f4e-9a55-2f1a2d1e0001",
+    "name": "TPI Backend 2026 - Adopcion responsable",
+    "description": "Ejecutar en orden sobre una base limpia (docker compose down -v; up). Configurar el entorno 'TPI local' y completar demoPassword con DEMO_USERS_PASSWORD del .env. Para recorrer el control final sin esperar 30 dias, levantar con PERIODO_ADAPTACION_DIAS=0.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Autenticacion (Keycloak)",
+      "item": [
+        {
+          "name": "Token adoptante1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "adoptante1"
+                },
+                {
+                  "key": "password",
+                  "value": "{{demoPassword}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "OIDC (Resource Owner Password, solo para pruebas) con el cliente publico tpi-client. Guarda el access_token en tokenAdoptante1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().access_token;",
+                  "pm.collectionVariables.set(\"tokenAdoptante1\", t);",
+                  "const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));",
+                  "pm.test(\"iss es la URL publica de Keycloak\", () => pm.expect(payload.iss).to.eql(pm.collectionVariables.get(\"keycloakUrl\") + \"/realms/\" + pm.collectionVariables.get(\"realm\")));",
+                  "console.log(\"sub\", payload.sub, \"roles\", payload.realm_access && payload.realm_access.roles);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token adoptante2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "adoptante2"
+                },
+                {
+                  "key": "password",
+                  "value": "{{demoPassword}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "OIDC (Resource Owner Password, solo para pruebas) con el cliente publico tpi-client. Guarda el access_token en tokenAdoptante2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().access_token;",
+                  "pm.collectionVariables.set(\"tokenAdoptante2\", t);",
+                  "const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));",
+                  "pm.test(\"iss es la URL publica de Keycloak\", () => pm.expect(payload.iss).to.eql(pm.collectionVariables.get(\"keycloakUrl\") + \"/realms/\" + pm.collectionVariables.get(\"realm\")));",
+                  "console.log(\"sub\", payload.sub, \"roles\", payload.realm_access && payload.realm_access.roles);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token coordinador1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "coordinador1"
+                },
+                {
+                  "key": "password",
+                  "value": "{{demoPassword}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "OIDC (Resource Owner Password, solo para pruebas) con el cliente publico tpi-client. Guarda el access_token en tokenCoordinador."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().access_token;",
+                  "pm.collectionVariables.set(\"tokenCoordinador\", t);",
+                  "const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));",
+                  "pm.test(\"iss es la URL publica de Keycloak\", () => pm.expect(payload.iss).to.eql(pm.collectionVariables.get(\"keycloakUrl\") + \"/realms/\" + pm.collectionVariables.get(\"realm\")));",
+                  "console.log(\"sub\", payload.sub, \"roles\", payload.realm_access && payload.realm_access.roles);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Seguridad",
+      "item": [
+        {
+          "name": "Sin token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "El Security Filter del Gateway rechaza la peticion antes de enrutar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"formato unico de error\", () => pm.expect(pm.response.json()).to.have.keys(\"timestamp\",\"status\",\"error\",\"message\",\"path\",\"errores\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante intenta dar de alta un animal -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "Autenticado pero sin el rol COORDINADOR (lo decide ms-animales, no el Gateway).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"X\",\n  \"especie\": \"PERRO\",\n  \"edadMeses\": 1,\n  \"tamanio\": \"PEQUENIO\",\n  \"aptoNinios\": true,\n  \"aptoOtrosAnimales\": true,\n  \"requiereEspacioExterior\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API interna no publicada -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/animales/1/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "animales",
+                "1",
+                "estado"
+              ]
+            },
+            "description": "El Gateway no enruta /internal/**: ningun usuario puede ordenar transiciones del proceso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoEstado\": \"ADOPTADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token con firma invalida -> 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenInvalido}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "JWT con firma que no corresponde a las claves de Keycloak: el Security Filter lo rechaza."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Catalogo (P1)",
+      "item": [
+        {
+          "name": "Listar disponibles (adoptante)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales?estado=DISPONIBLE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "DISPONIBLE"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alta de Toby (coordinador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Toby\",\n  \"especie\": \"PERRO\",\n  \"edadMeses\": 30,\n  \"tamanio\": \"GRANDE\",\n  \"necesidadesEspeciales\": null,\n  \"aptoNinios\": true,\n  \"aptoOtrosAnimales\": true,\n  \"requiereEspacioExterior\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"estado DISPONIBLE\", () => pm.expect(pm.response.json().estado).to.eql(\"DISPONIBLE\"));",
+                  "pm.collectionVariables.set(\"animalId\", pm.response.json().id);",
+                  "pm.test(\"Location\", () => pm.response.to.have.header(\"Location\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alta de Michi, no apto con ninios (coordinador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Michi\",\n  \"especie\": \"GATO\",\n  \"edadMeses\": 12,\n  \"tamanio\": \"PEQUENIO\",\n  \"necesidadesEspeciales\": \"Asustadizo\",\n  \"aptoNinios\": false,\n  \"aptoOtrosAnimales\": true,\n  \"requiereEspacioExterior\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"animalNoAptoNiniosId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alta con datos invalidos -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"especie\": \"DRAGON\",\n  \"edadMeses\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Proceso central de adopcion (P2-P4)",
+      "item": [
+        {
+          "name": "Adoptante1 completa su perfil (R-03)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/adoptantes/me/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "adoptantes",
+                "me",
+                "perfil"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Ana Adoptante\",\n  \"telefono\": \"3515550000\",\n  \"provincia\": \"Cordoba\",\n  \"localidad\": \"Cordoba\",\n  \"direccion\": \"Av Colon 1000\",\n  \"tipoVivienda\": \"DEPARTAMENTO\",\n  \"tienePatio\": false,\n  \"hayNinios\": false,\n  \"hayOtrosAnimales\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante1 presenta la solicitud -> PENDIENTE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "Adopciones verifica R-03 y R-02, consulta a Animales (API interna, token de servicio) para R-01, evalua R-04/R-05 y pide coordenadas a Georef (R-06).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animalId\": \"{{animalId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"estado PENDIENTE\", () => pm.expect(pm.response.json().estado).to.eql(\"PENDIENTE\"));",
+                  "const s = pm.response.json(); pm.collectionVariables.set(\"solicitudId\", s.id);",
+                  "pm.test(\"Georef: distancia calculada o marca de no verificada\", () => pm.expect(s.distanciaKm !== null || s.distanciaNoVerificada).to.be.true);",
+                  "pm.test(\"R-05: observacion por falta de patio\", () => pm.expect(s.observaciones.join(\" \")).to.include(\"R-05\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante2 completa su perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/adoptantes/me/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "adoptantes",
+                "me",
+                "perfil"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Bruno Adoptante\",\n  \"telefono\": \"3515550001\",\n  \"provincia\": \"Cordoba\",\n  \"localidad\": \"Cordoba\",\n  \"direccion\": \"Bv San Juan 500\",\n  \"tipoVivienda\": \"CASA\",\n  \"tienePatio\": true,\n  \"hayNinios\": true,\n  \"hayOtrosAnimales\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante2 pide el mismo animal -> 409 R-01",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animalId\": \"{{animalId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"menciona R-01\", () => pm.expect(pm.response.json().message).to.include(\"R-01\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante1 pide otro animal -> 409 R-02",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animalId\": \"{{animalNoAptoNiniosId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"menciona R-02\", () => pm.expect(pm.response.json().message).to.include(\"R-02\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Coordinador lista las pendientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes?estado=PENDIENTE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Coordinador consulta la solicitud",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"adoptante1Id\", pm.response.json().adoptanteId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Coordinador ve el perfil del hogar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/adoptantes/{{adoptante1Id}}/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "adoptantes",
+                "{{adoptante1Id}}",
+                "perfil"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"incluye la direccion\", () => pm.expect(pm.response.json().direccion).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adoptante1 intenta aprobar -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/aprobar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "aprobar"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Coordinador aprueba -> APROBADA (animal RESERVADO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/aprobar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "aprobar"
+              ]
+            },
+            "description": "R-07: Adopciones pide a Animales DISPONIBLE->RESERVADO; solo si Animales confirma queda APROBADA.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justificacion\": \"Hogar adecuado; se acuerda la entrega\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado APROBADA\", () => pm.expect(pm.response.json().estado).to.eql(\"APROBADA\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El animal quedo RESERVADO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animalId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado RESERVADO\", () => pm.expect(pm.response.json().estado).to.eql(\"RESERVADO\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R-13: no se puede marcar NO_DISPONIBLE -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animalId}}/marcar-no-disponible",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animalId}}",
+                "marcar-no-disponible"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"menciona R-13\", () => pm.expect(pm.response.json().message).to.include(\"R-13\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar entrega -> EN_ADAPTACION",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/confirmar-entrega",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "confirmar-entrega"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado EN_ADAPTACION\", () => pm.expect(pm.response.json().estado).to.eql(\"EN_ADAPTACION\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Control final CONFORME -> FINALIZADA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/control-final",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "control-final"
+              ]
+            },
+            "description": "Con PERIODO_ADAPTACION_DIAS=0 (demo) se registra al instante. Con 30 dias responde 409 (R-11).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resultado\": \"CONFORME\",\n  \"observaciones\": \"Se adapto muy bien\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado FINALIZADA\", () => pm.expect(pm.response.json().estado).to.eql(\"FINALIZADA\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El animal quedo ADOPTADO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animalId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado ADOPTADO\", () => pm.expect(pm.response.json().estado).to.eql(\"ADOPTADO\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de la solicitud (trazabilidad)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "historial"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"4 eventos\", () => pm.expect(pm.response.json().length).to.eql(4));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otro adoptante no ve la solicitud ajena -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Casos alternativos",
+      "item": [
+        {
+          "name": "R-04: hogar con ninios pide a Michi -> RECHAZADA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animalId\": \"{{animalNoAptoNiniosId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"estado RECHAZADA\", () => pm.expect(pm.response.json().estado).to.eql(\"RECHAZADA\"));",
+                  "pm.test(\"motivo R-04\", () => pm.expect(pm.response.json().motivoRechazo).to.include(\"R-04\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazo sin motivo -> 400 (R-08)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/rechazar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitudId}}",
+                "rechazar"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Solicitud inexistente -> 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "999999"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Animal inexistente -> 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"animalId\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Donaciones (P5, Mercado Pago)",
+      "item": [
+        {
+          "name": "D-01: monto menor al minimo -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 0.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"menciona D-01\", () => pm.expect(pm.response.json().message).to.include(\"D-01\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear donacion -> 201 con linkPago (503 si MP no responde)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones"
+              ]
+            },
+            "description": "Abrir linkPago en una ventana de incognito con la cuenta compradora de prueba y pagar con tarjeta de prueba (titular APRO).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 o 503\", () => pm.expect(pm.response.code).to.be.oneOf([201, 503]));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"donacionId\", pm.response.json().id); console.log(\"Pagar en:\", pm.response.json().linkPago); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar donacion (verifica el pago en MP)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones/{{donacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones",
+                "{{donacionId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "console.log(\"estado\", pm.response.json().estado, \"verificado\", pm.response.json().verificado);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D-04: otro donante -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones/{{donacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones",
+                "{{donacionId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Total confirmado (coordinador)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCoordinador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones/total",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones",
+                "total"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Total por un adoptante -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdoptante1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donaciones/total",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "donaciones",
+                "total"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "keycloakUrl",
+      "value": "http://localhost:8180"
+    },
+    {
+      "key": "realm",
+      "value": "adopciones"
+    },
+    {
+      "key": "clientId",
+      "value": "tpi-client"
+    },
+    {
+      "key": "tokenAdoptante1",
+      "value": ""
+    },
+    {
+      "key": "tokenAdoptante2",
+      "value": ""
+    },
+    {
+      "key": "tokenCoordinador",
+      "value": ""
+    },
+    {
+      "key": "tokenInvalido",
+      "value": "eyJhbGciOiJSUzI1NiIsImtpZCI6IngifQ.eyJzdWIiOiJ4In0.firma-invalida"
+    },
+    {
+      "key": "animalId",
+      "value": ""
+    },
+    {
+      "key": "animalNoAptoNiniosId",
+      "value": ""
+    },
+    {
+      "key": "solicitudId",
+      "value": ""
+    },
+    {
+      "key": "donacionId",
+      "value": ""
+    },
+    {
+      "key": "adoptante1Id",
+      "value": ""
+    }
+  ]
+}

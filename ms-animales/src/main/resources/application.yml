@@ -1,0 +1,46 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ms-animales
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/tpi}
+    username: ${DB_USER:animales_user}
+    password: ${DB_PASSWORD:animales_pass}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        # Cada servicio trabaja solo en su esquema; su usuario no tiene permisos sobre los otros
+        default_schema: animales
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # issuer-uri: emisor que se valida en el claim "iss" (siempre la URL publica de Keycloak).
+          # jwk-set-uri: de donde se bajan las claves publicas (dentro de Docker, keycloak:8080).
+          # Al estar las dos, Spring no hace "discovery" al arrancar y valida firma + emisor.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/adopciones}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/adopciones/protocol/openid-connect/certs}
+
+animales:
+  datos-demo: ${ANIMALES_DATOS_DEMO:true}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [ms-animales] [%X{correlationId}] %logger{36} - %msg%n"

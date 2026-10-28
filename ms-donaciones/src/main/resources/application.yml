@@ -1,0 +1,49 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ms-donaciones
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/tpi}
+    username: ${DB_USER:donaciones_user}
+    password: ${DB_PASSWORD:donaciones_pass}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: donaciones
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/adopciones}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/adopciones/protocol/openid-connect/certs}
+
+donaciones:
+  monto-minimo: ${DONACION_MONTO_MINIMO:1}
+  mercado-pago:
+    base-url: ${MP_BASE_URL:https://api.mercadopago.com}
+    # Solo la credencial de la cuenta VENDEDORA DE PRUEBA. Nunca se versiona.
+    access-token: ${MP_ACCESS_TOKEN:sin-configurar}
+    timeout: ${MP_TIMEOUT:5s}
+    usar-sandbox-init-point: ${MP_USAR_SANDBOX_INIT_POINT:false}
+    titulo-item: "Donacion al refugio"
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [ms-donaciones] [%X{correlationId}] %logger{36} - %msg%n"

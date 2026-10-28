@@ -1,0 +1,80 @@
+{
+  "realm": "adopciones",
+  "displayName": "Adopcion responsable",
+  "enabled": true,
+  "sslRequired": "none",
+  "accessTokenLifespan": 1800,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "ADOPTANTE", "description": "Persona que adopta o dona. Solo ve y modifica lo suyo" },
+      { "name": "COORDINADOR", "description": "Personal del refugio: administra animales y decide solicitudes" },
+      { "name": "SERVICIO", "description": "Cuenta de servicio de ms-adopciones para la API interna de Animales" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "tpi-client",
+      "name": "Cliente de usuarios (Postman / frontend)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:*", "https://oauth.pstmn.io/v1/callback"],
+      "webOrigins": ["+"]
+    },
+    {
+      "clientId": "adopciones-service",
+      "name": "Cuenta de servicio de ms-adopciones",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${ADOPCIONES_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "adoptante1",
+      "enabled": true,
+      "email": "adoptante1@refugio.demo",
+      "emailVerified": true,
+      "firstName": "Ana",
+      "lastName": "Adoptante",
+      "credentials": [{ "type": "password", "value": "${DEMO_USERS_PASSWORD}", "temporary": false }],
+      "realmRoles": ["ADOPTANTE"]
+    },
+    {
+      "username": "adoptante2",
+      "enabled": true,
+      "email": "adoptante2@refugio.demo",
+      "emailVerified": true,
+      "firstName": "Bruno",
+      "lastName": "Adoptante",
+      "credentials": [{ "type": "password", "value": "${DEMO_USERS_PASSWORD}", "temporary": false }],
+      "realmRoles": ["ADOPTANTE"]
+    },
+    {
+      "username": "coordinador1",
+      "enabled": true,
+      "email": "coordinador1@refugio.demo",
+      "emailVerified": true,
+      "firstName": "Carla",
+      "lastName": "Coordinadora",
+      "credentials": [{ "type": "password", "value": "${DEMO_USERS_PASSWORD}", "temporary": false }],
+      "realmRoles": ["COORDINADOR"]
+    },
+    {
+      "username": "service-account-adopciones-service",
+      "enabled": true,
+      "serviceAccountClientId": "adopciones-service",
+      "realmRoles": ["SERVICIO"]
+    }
+  ]
+}

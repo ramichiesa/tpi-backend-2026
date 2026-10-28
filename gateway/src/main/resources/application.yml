@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Igual que en los servicios: se valida el emisor publico y las claves se bajan por la red interna
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/adopciones}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/adopciones/protocol/openid-connect/certs}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 15s
+          # Las rutas publicas no se reescriben (CONTRATOS.md, seccion 2). /internal/** no tiene ruta.
+          routes:
+            - id: animales
+              uri: ${ANIMALES_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/animales/**
+            - id: adopciones
+              uri: ${ADOPCIONES_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/adoptantes/**,/api/solicitudes/**
+            - id: donaciones
+              uri: ${DONACIONES_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/donaciones/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [gateway] %logger{36} - %msg%n"

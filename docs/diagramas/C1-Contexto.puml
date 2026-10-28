@@ -1,0 +1,27 @@
+@startuml C1-Contexto
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+title C1 - Diagrama de Contexto: Sistema de Adopción Responsable de Animales (implementado)
+
+Person(adoptante, "Adoptante", "Persona que quiere adoptar o colaborar. Carga su perfil y su domicilio, solicita animales, realiza donaciones y consulta el estado de su adopción.")
+Person(coordinador, "Coordinador", "Personal del refugio. Administra los animales, evalúa y decide las solicitudes, confirma entregas, registra el control final y consulta las donaciones recibidas.")
+
+System(sistema, "Sistema de Adopción Responsable", "Backend que ordena el ciclo completo de una adopción (disponibilidad de animales, evaluación de solicitudes con reglas verificables, entrega y período de adaptación) y registra las donaciones a la cuenta común de la organización.")
+
+System_Ext(keycloak, "Keycloak", "Identity Provider. Autentica usuarios (OIDC), emite tokens JWT y administra los roles ADOPTANTE, COORDINADOR y SERVICIO.")
+System_Ext(georef, "API Georef (Datos Argentina)", "API pública del Estado argentino. Normaliza direcciones y devuelve sus coordenadas geográficas.")
+System_Ext(mercadopago, "Mercado Pago", "Plataforma de pagos. Crea los cobros de las donaciones y informa si fueron acreditados.")
+
+Rel(adoptante, sistema, "Completa su perfil, solicita adopciones, dona y consulta su estado", "HTTPS / REST JSON")
+Rel(coordinador, sistema, "Gestiona animales, evalúa solicitudes, confirma entregas, registra controles y consulta donaciones", "HTTPS / REST JSON")
+
+Rel(adoptante, keycloak, "Inicia sesión y obtiene su token", "OIDC")
+Rel(coordinador, keycloak, "Inicia sesión y obtiene su token", "OIDC")
+Rel(adoptante, mercadopago, "Paga sus donaciones en la página de pago del proveedor", "HTTPS")
+
+Rel(sistema, keycloak, "Valida los JWT (claves públicas) y obtiene un token de servicio", "JWKS / OAuth2 client credentials")
+Rel(sistema, georef, "Obtiene las coordenadas del domicilio del postulante para calcular su distancia al refugio", "HTTPS / JSON")
+Rel(sistema, mercadopago, "Crea los cobros de donación y consulta el estado de los pagos", "HTTPS / JSON")
+
+@enduml

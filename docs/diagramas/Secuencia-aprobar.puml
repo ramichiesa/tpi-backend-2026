@@ -1,0 +1,49 @@
+@startuml Secuencia-aprobar
+title Presentar y aprobar una solicitud (colaboración Adopciones -> Animales, Georef)
+
+actor Adoptante
+actor Coordinador
+participant "API Gateway" as GW
+participant "ms-adopciones" as AD
+participant "ms-animales" as AN
+participant "Keycloak" as KC
+participant "API Georef" as GEO
+database "esquema adopciones" as DB
+
+== Presentar (P2) ==
+Adoptante -> GW : POST /api/solicitudes {animalId}\nAuthorization: Bearer JWT
+GW -> GW : Security Filter: firma, iss, exp, rol
+GW -> AD : reenvía + X-Correlation-ID
+AD -> AD : valida JWT de nuevo, rol ADOPTANTE
+AD -> DB : R-03 perfil existe; R-02 sin solicitud activa
+AD -> KC : client_credentials (si el token de servicio venció)
+AD -> AN : GET /internal/animales/{id} (Bearer token SERVICIO)
+alt Animales no responde
+  AD --> GW : 503 (R-01 es bloqueante)
+end
+AD -> AD : R-01 estado DISPONIBLE y sin otra PENDIENTE
+AD -> AD : R-04 incompatibilidad dura -> RECHAZADA (sin consultar Georef)
+AD -> AD : R-05 observaciones
+AD -> GEO : GET /direcciones?direccion&localidad&provincia&max=1
+alt Georef falla o no encuentra
+  AD -> AD : distanciaNoVerificada = true
+else coordenadas
+  AD -> AD : Haversine vs refugio; > 100 km -> requiereExcepcion
+end
+AD -> DB : INSERT solicitud PENDIENTE (UNIQUE animal_pendiente, adoptante_activo)
+AD --> Adoptante : 201 SolicitudResponse
+
+== Aprobar (R-07, R-08) ==
+Coordinador -> GW : POST /api/solicitudes/{id}/aprobar {justificacion}
+GW -> AD
+AD -> DB : BEGIN; carga; Solicitud.aprobar() (PENDIENTE, R-08); flush (versión)
+AD -> AN : PUT /internal/animales/{id}/estado {RESERVADO}
+alt Animales rechaza (409) o no responde (503)
+  AD -> DB : ROLLBACK -> la solicitud sigue PENDIENTE
+  AD --> Coordinador : 409 / 503
+else confirmado
+  AN -> AN : Animal.cambiarEstadoPorProceso (DISPONIBLE -> RESERVADO) + @Version
+  AD -> DB : COMMIT (APROBADA + evento en historial)
+  AD --> Coordinador : 200 APROBADA
+end
+@enduml

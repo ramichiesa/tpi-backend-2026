@@ -1,0 +1,17 @@
+# Solo para desarrollo: publica los puertos de los servicios y de la base de negocio
+# (Docker Compose lo aplica automaticamente con "docker compose up").
+# Para ejecutar sin esto (solo Gateway y Keycloak publicados):
+#   docker compose -f docker-compose.yml up --build -d
+services:
+  ms-animales:
+    ports:
+      - "8081:8081"
+  ms-adopciones:
+    ports:
+      - "8082:8082"
+  ms-donaciones:
+    ports:
+      - "8083:8083"
+  postgres:
+    ports:
+      - "5433:5432"

@@ -1,0 +1,62 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: ms-adopciones
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/tpi}
+    username: ${DB_USER:adopciones_user}
+    password: ${DB_PASSWORD:adopciones_pass}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: adopciones
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/adopciones}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/adopciones/protocol/openid-connect/certs}
+
+adopciones:
+  politica:
+    refugio-lat: ${REFUGIO_LAT:-31.4334}
+    refugio-lon: ${REFUGIO_LON:-64.1918}
+    distancia-max-km: ${DISTANCIA_MAX_KM:100}
+    plazo-entrega-dias: ${PLAZO_ENTREGA_DIAS:7}
+    periodo-adaptacion-dias: ${PERIODO_ADAPTACION_DIAS:30}
+  integraciones:
+    animales:
+      base-url: ${ANIMALES_URL:http://localhost:8081}
+      timeout: ${ANIMALES_TIMEOUT:3s}
+    keycloak:
+      token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/adopciones/protocol/openid-connect/token}
+      client-id: ${ADOPCIONES_SERVICE_CLIENT_ID:adopciones-service}
+      client-secret: ${ADOPCIONES_SERVICE_CLIENT_SECRET:cambiar}
+      timeout: ${KEYCLOAK_TIMEOUT:3s}
+    georef:
+      base-url: ${GEOREF_BASE_URL:https://apis.datos.gob.ar/georef/api/v2.0}
+      timeout: ${GEOREF_TIMEOUT:4s}
+  tareas:
+    habilitadas: ${TAREAS_HABILITADAS:true}
+    intervalo-ms: ${VENCIMIENTOS_INTERVALO_MS:300000}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [ms-adopciones] [%X{correlationId}] %logger{36} - %msg%n"

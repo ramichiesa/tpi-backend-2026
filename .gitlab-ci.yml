@@ -1,0 +1,35 @@
+# Integracion continua en GitLab: cada push y cada Merge Request compila el reactor completo
+# (incluido tpi-common, que se instala en el .m2 del job) y ejecuta todas las pruebas.
+# Las pruebas usan H2 y dobles de prueba: no necesitan Docker, Keycloak ni Internet.
+image: maven:3.9-eclipse-temurin-21
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+cache:
+  key: maven-$CI_COMMIT_REF_SLUG
+  paths:
+    - .m2/repository
+
+stages:
+  - build
+  - test
+
+compilar:
+  stage: build
+  script:
+    - mvn -B -q -DskipTests clean install
+
+pruebas:
+  stage: test
+  script:
+    - mvn -B clean install
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/target/surefire-reports/TEST-*.xml"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH
